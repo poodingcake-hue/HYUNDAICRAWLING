@@ -175,31 +175,39 @@ async def crawl_hmall() -> list:
                     // data-time 속성이 있는 컨테이너 또는 상품 링크 탐색
                     let containers = Array.from(document.querySelectorAll('[data-time], ._1jauv3p0'));
                     
+                    let lastDate = "오늘";
+                    let lastTime = "시간정보없음";
+
                     containers.forEach(container => {
                         let broadcastTime = container.getAttribute('data-time') || "";
                         if (broadcastTime && broadcastTime.includes(' ')) {
                             broadcastTime = broadcastTime.split(' ')[1];
                         }
                         
-                        // 시간 정보 추출
+                        // 시간 정보 추출 시도
+                        let currentTime = "";
                         if (!broadcastTime || broadcastTime === "") {
                             let tMatch = container.innerText.match(/(\\d{2}:\\d{2})/);
-                            if (tMatch) broadcastTime = tMatch[1];
+                            if (tMatch) currentTime = tMatch[1];
                         } else {
                             let startMatch = broadcastTime.match(/(\\d{2}:\\d{2})/);
-                            if (startMatch) broadcastTime = startMatch[1];
+                            if (startMatch) currentTime = startMatch[1];
                         }
-
-                        // 날짜 정보 추출 (예: "오늘", "2월 23일")
-                        let itemDate = "오늘";
+                        
+                        // 날짜 정보 추출 시도 (예: "오늘", "2월 23일")
+                        let currentDate = null;
                         let dMatch = container.innerText.match(/(\\d{1,2}월\\s*\\d{1,2}일)/);
                         if (dMatch) {
-                            itemDate = dMatch[1];
+                            currentDate = dMatch[1];
                         } else if (container.innerText.includes("내일")) {
-                            itemDate = "내일";
+                            currentDate = "내일";
                         } else if (container.innerText.includes("오늘")) {
-                            itemDate = "오늘";
+                            currentDate = "오늘";
                         }
+
+                        // 정보가 있으면 업데이트, 없으면 유지 (Stateful Propagation)
+                        if (currentTime) lastTime = currentTime;
+                        if (currentDate) lastDate = currentDate;
 
                         // 해당 컨테이너 내의 모든 상품 코드 링크 탐색
                         let links = Array.from(container.querySelectorAll('a[href*="slitmCd="], [data-slitm-cd], [data-slitm_cd]'));
@@ -219,10 +227,10 @@ async def crawl_hmall() -> list:
                             
                             if (name.length >= 2) {
                                 items.push({ 
-                                    time: broadcastTime || "시간정보없음", 
+                                    time: lastTime, 
                                     code, 
                                     name,
-                                    itemDate: itemDate
+                                    itemDate: lastDate
                                 });
                             }
                         });
