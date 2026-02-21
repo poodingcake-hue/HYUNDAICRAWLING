@@ -162,21 +162,23 @@ async def crawl_hmall() -> list:
 
             # ── 스크롤 및 증분 수집 (Virtuoso 대응) ────────────────────
             print("  🔽 모든 상품 증분 수집 중...")
-            day_results = {} # { (time, code): item_dict }
+            # 상태 유지 변수 (루프 외부에서 관리)
+            day_results = {} # { (date, time, code): item_dict }
+            current_state = {"lastDate": "오늘", "lastTime": "시간정보없음"}
             
             last_height = 0
             scroll_count = 0
             stagnant_count = 0
             
             while scroll_count < 200: # 충분히 늘려 편성표 전체(7일치) 수집 보장
-                # 현재 보이는 상품 수집
-                new_items = await page.evaluate("""() => {
+                # 현재 보이는 상품 수집 (상태값 전달)
+                eval_result = await page.evaluate("""(state) => {
                     let items = [];
                     // data-time 속성이 있는 컨테이너 또는 상품 링크 탐색
                     let containers = Array.from(document.querySelectorAll('[data-time], ._1jauv3p0'));
                     
-                    let lastDate = "오늘";
-                    let lastTime = "시간정보없음";
+                    let lastDate = state.lastDate;
+                    let lastTime = state.lastTime;
 
                     containers.forEach(container => {
                         let broadcastTime = container.getAttribute('data-time') || "";
@@ -235,8 +237,12 @@ async def crawl_hmall() -> list:
                             }
                         });
                     });
-                    return items;
-                }""")
+                    return { items, lastDate, lastTime };
+                }""", current_state)
+                
+                new_items = eval_result["items"]
+                current_state["lastDate"] = eval_result["lastDate"]
+                current_state["lastTime"] = eval_result["lastTime"]
                 
                 # 수집된 데이터 저장 (중복 자동 제거)
                 today = datetime.datetime.now()
