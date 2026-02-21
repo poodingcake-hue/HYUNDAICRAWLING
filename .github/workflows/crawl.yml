@@ -1,0 +1,43 @@
+name: 현대홈쇼핑 편성표 크롤링
+
+on:
+  schedule:
+    # 매 시간 정각에 실행 (UTC 기준 → 한국시간 = UTC+9)
+    - cron: '0 * * * *'
+  # 수동 실행도 가능하도록 설정
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 🎭 Playwright 브라우저 설치
+        run: playwright install chromium --with-deps
+
+      - name: 🕷️ 크롤링 실행
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python hmall_crawler.py
+
+      - name: ⏰ 시간 설정
+        run: echo "CURRENT_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: 💾 CSV 파일 커밋 (선택사항)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 편성표 업데이트 - ${{ env.CURRENT_TIME }}"
+          file_pattern: "hmall_schedule.csv"

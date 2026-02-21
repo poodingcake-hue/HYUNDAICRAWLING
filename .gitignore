@@ -1,0 +1,19 @@
+# 서비스 계정 키 (절대 GitHub에 올리지 마세요!)
+service_account.json
+
+# 크롤링 결과 CSV (선택적으로 무시)
+# hmall_schedule.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.env
+.env
+
+# 진단/테스트용 스크립트 (GitHub에 올릴 필요 없음)
+debug_buttons.py
+find_api.py
+inspect_item.py
+inspect_page.py
+trace_json.py
+verify_selectors.py
